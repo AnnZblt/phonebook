@@ -1,31 +1,5 @@
 'use strict';
-const data = [
-  {
-    name: 'Иван',
-    surname: 'Петров',
-    phone: '+79514545454',
-  },
-  {
-    name: 'Игорь',
-    surname: 'Семёнов',
-    phone: '+79999999999',
-  },
-  {
-    name: 'Семён',
-    surname: 'Иванов',
-    phone: '+79800252525',
-  },
-  {
-    name: 'Мария',
-    surname: 'Попова',
-    phone: '+79876543210',
-  },
-  {
-    name: 'Хороший',
-    surname: 'Кредит',
-    phone: '88005553535',
-  },
-];
+const data = [];
 
 {
   const addContactData = contact => {
@@ -109,6 +83,7 @@ const data = [
 
     const tbody = document.createElement('tbody');
 
+    tbody.classList.add('contact-list');
     table.append(thead, tbody);
     table.tbody = tbody;
 
@@ -230,11 +205,19 @@ const data = [
     tr.classList.add('contact');
     tdDel.classList.add('delete');
     buttonDel.classList.add('del-icon');
+
     tdName.textContent = firstName;
+    tdName.classList.add('contact-name');
+
     tdSurname.textContent = surname;
+    tdSurname.classList.add('contact-surname');
+
     phoneLink.href = `tel:${phone}`;
     phoneLink.textContent = phone;
+    phoneLink.classList.add('contact-phone');
     tr.phoneLink = phoneLink;
+    tr.dataset.phone = phone;
+
     buttonEdit.classList.add('edit-icon');
 
     tdDel.append(buttonDel);
@@ -257,9 +240,11 @@ const data = [
     allRow.forEach(contact => {
       contact.addEventListener('mouseenter', () => {
         logo.textContent = contact.phoneLink.textContent;
+        console.log('Mouse enter');
       });
       contact.addEventListener('mouseleave', () => {
         logo.textContent = text;
+        console.log('Mouse leave');
       });
     });
   };
@@ -287,6 +272,38 @@ const data = [
     };
   };
 
+  const getStorage = key => {
+    const storageData = localStorage.getItem(key);
+    if (storageData) {
+      return JSON.parse(storageData);
+    } else {
+      return [];
+    }
+  };
+
+  const setStorage = (key, obj) => {
+    const newData = getStorage(key);
+    newData.push(obj);
+    localStorage.setItem(key, JSON.stringify(newData));
+  };
+
+  const removeStorage = phoneNumber => {
+    const contacts = getStorage('contact-list');
+    let removeItemIndex = -1;
+    contacts.findIndex((contact, index) => {
+      if (contact.phone === phoneNumber) {
+        removeItemIndex = index;
+        return removeItemIndex;
+      }
+    });
+    console.log(removeItemIndex);
+
+    if (removeItemIndex !== -1) {
+      contacts.splice(removeItemIndex, 1);
+      localStorage.setItem('contact-list', JSON.stringify(contacts));
+    }
+  };
+
   const deleteControl = (btnDel, list) => {
     btnDel.addEventListener('click', () => {
       document.querySelectorAll('.delete').forEach(del => {
@@ -297,6 +314,8 @@ const data = [
     list.addEventListener('click', event => {
       const target = event.target;
       if (target.closest('.del-icon')) {
+        let removePhone = target.closest('.contact').dataset.phone;
+        removeStorage(removePhone);
         target.closest('.contact').remove();
       }
     });
@@ -314,8 +333,18 @@ const data = [
 
       addContactPage(newContact, list);
       addContactData(newContact);
+      console.log(newContact);
+      setStorage('contact-list', newContact);
       form.reset();
       closeModal();
+    });
+  };
+
+  const storageContacts = (key, list) => {
+    const contactsList = getStorage(key);
+
+    contactsList.forEach(contact => {
+      addContactPage(contact, list);
     });
   };
 
@@ -331,10 +360,12 @@ const data = [
       btnDel,
     } = renderPhoneBook(app, title);
 
+
     // Функционал
     const allRow = renderContacts(list, data);
     const { closeModal } = modalControl(btnAdd, formOverlay);
 
+    storageContacts('contact-list', list);
     hoverRow(allRow, logo);
     deleteControl(btnDel, list);
     formControl(form, list, closeModal);
